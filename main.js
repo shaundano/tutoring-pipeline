@@ -4,7 +4,7 @@
 // http://www.ni-sp.com/DCVSDK/
 
 import "./dcvjs/dcv.js"
-import { CONFIGTEACHER, CONFIGSTUDENT, CONFIGSTUDENT2 } from './config.js'
+import { CONFIGTEACHER, CONFIGSTUDENT } from './config.js'
 
 
 let auth,
@@ -45,7 +45,7 @@ function showLaunchPrompt () {
     studentRadio.checked = true; // Default to student
     studentRadio.style.cssText = 'width: 20px; height: 20px; cursor: pointer;';
     
-    const studentText = document.createTextNode('Student');
+    const studentText = document.createTextNode('Frank');
     studentLabel.appendChild(studentRadio);
     studentLabel.appendChild(studentText);
     radioContainer.appendChild(studentLabel);
@@ -63,28 +63,10 @@ function showLaunchPrompt () {
     teacherRadio.id = 'role-teacher';
     teacherRadio.style.cssText = 'width: 20px; height: 20px; cursor: pointer;';
     
-    const teacherText = document.createTextNode('Teacher');
+    const teacherText = document.createTextNode('Chris');
     teacherLabel.appendChild(teacherRadio);
     teacherLabel.appendChild(teacherText);
     radioContainer.appendChild(teacherLabel);
-    
-    // Student2 radio
-    const student2Label = document.createElement('label');
-    student2Label.style.cssText = 'display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 18px; padding: 10px; border-radius: 6px; transition: background 0.2s;';
-    student2Label.onmouseover = () => student2Label.style.background = '#f5f5f5';
-    student2Label.onmouseout = () => student2Label.style.background = 'transparent';
-    
-    const student2Radio = document.createElement('input');
-    student2Radio.type = 'radio';
-    student2Radio.name = 'role';
-    student2Radio.value = 'student2';
-    student2Radio.id = 'role-student2';
-    student2Radio.style.cssText = 'width: 20px; height: 20px; cursor: pointer;';
-    
-    const student2Text = document.createTextNode('Student 2');
-    student2Label.appendChild(student2Radio);
-    student2Label.appendChild(student2Text);
-    radioContainer.appendChild(student2Label);
     
     container.appendChild(radioContainer);
     
@@ -98,13 +80,7 @@ function showLaunchPrompt () {
     button.onclick = () => {
         // Get selected role
         const selectedRole = document.querySelector('input[name="role"]:checked').value;
-        if (selectedRole === 'teacher') {
-            selectedConfig = CONFIGTEACHER;
-        } else if (selectedRole === 'student2') {
-            selectedConfig = CONFIGSTUDENT2;
-        } else {
-            selectedConfig = CONFIGSTUDENT;
-        }
+        selectedConfig = selectedRole === 'teacher' ? CONFIGTEACHER : CONFIGSTUDENT;
         
         container.remove();
         showLoadingMessage();
@@ -342,6 +318,17 @@ function showMediaPermissionsModal(connection) {
         font-family: Arial, sans-serif;
         pointer-events: auto;
     `;
+    
+    // Prevent clicks and mouse events on overlay from passing through to DCV
+    modalOverlay.onclick = (e) => {
+        e.stopPropagation();
+    };
+    modalOverlay.onmousedown = (e) => {
+        e.stopPropagation();
+    };
+    modalOverlay.onmouseup = (e) => {
+        e.stopPropagation();
+    };
 
     // Create modal content
     const modalContent = document.createElement('div');
@@ -354,6 +341,17 @@ function showMediaPermissionsModal(connection) {
         width: 90%;
         text-align: center;
     `;
+    
+    // Prevent clicks and mouse events on modal content from passing through
+    modalContent.onclick = (e) => {
+        e.stopPropagation();
+    };
+    modalContent.onmousedown = (e) => {
+        e.stopPropagation();
+    };
+    modalContent.onmouseup = (e) => {
+        e.stopPropagation();
+    };
 
     const title = document.createElement('h2');
     title.textContent = 'Media Permissions Required';
@@ -477,7 +475,9 @@ function showMediaPermissionsModal(connection) {
     }
 
     // Enable webcam handler
-    enableWebcamBtn.onclick = () => {
+    enableWebcamBtn.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         enableWebcamBtn.disabled = true;
         enableWebcamBtn.textContent = 'Enabling...';
         connection.setWebcam(true)
@@ -500,7 +500,9 @@ function showMediaPermissionsModal(connection) {
     };
 
     // Enable mic handler
-    enableMicBtn.onclick = () => {
+    enableMicBtn.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         enableMicBtn.disabled = true;
         enableMicBtn.textContent = 'Enabling...';
         connection.setMicrophone(true)
@@ -523,7 +525,9 @@ function showMediaPermissionsModal(connection) {
     };
 
     // Continue handler
-    continueBtn.onclick = () => {
+    continueBtn.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         if (webcamEnabled && micEnabled) {
             modalOverlay.remove();
             // Buttons are already visible from when modal appeared
