@@ -41,6 +41,10 @@ function createMediaPermissionsComponent() {
     micStatus.id = 'pre-mic-status';
     micStatus.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 6px; border: 1px solid #ddd;';
     
+    const clipboardStatus = document.createElement('div');
+    clipboardStatus.id = 'pre-clipboard-status';
+    clipboardStatus.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 6px; border: 1px solid #ddd;';
+    
     // Webcam status
     const webcamLabel = document.createElement('span');
     webcamLabel.textContent = 'Webcam:';
@@ -67,8 +71,22 @@ function createMediaPermissionsComponent() {
     micStatus.appendChild(micLabel);
     micStatus.appendChild(micIndicator);
     
+    // Clipboard status
+    const clipboardLabel = document.createElement('span');
+    clipboardLabel.textContent = 'Clipboard:';
+    clipboardLabel.style.cssText = 'font-weight: 500; color: #333;';
+    
+    const clipboardIndicator = document.createElement('span');
+    clipboardIndicator.id = 'pre-clipboard-indicator';
+    clipboardIndicator.textContent = 'Not Enabled';
+    clipboardIndicator.style.cssText = 'color: #d9534f; font-weight: bold;';
+    
+    clipboardStatus.appendChild(clipboardLabel);
+    clipboardStatus.appendChild(clipboardIndicator);
+    
     statusContainer.appendChild(webcamStatus);
     statusContainer.appendChild(micStatus);
+    statusContainer.appendChild(clipboardStatus);
     
     // Buttons container
     const buttonsContainer = document.createElement('div');
@@ -122,8 +140,33 @@ function createMediaPermissionsComponent() {
         }
     };
     
+    const enableClipboardBtn = document.createElement('button');
+    enableClipboardBtn.id = 'pre-enable-clipboard';
+    enableClipboardBtn.textContent = 'Enable Clipboard';
+    enableClipboardBtn.style.cssText = `
+        padding: 10px 20px;
+        font-size: 14px;
+        background: #5cb85c;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+    `;
+    enableClipboardBtn.onmouseover = () => {
+        if (!enableClipboardBtn.disabled) {
+            enableClipboardBtn.style.background = '#4cae4c';
+        }
+    };
+    enableClipboardBtn.onmouseout = () => {
+        if (!enableClipboardBtn.disabled) {
+            enableClipboardBtn.style.background = '#5cb85c';
+        }
+    };
+    
     buttonsContainer.appendChild(enableWebcamBtn);
     buttonsContainer.appendChild(enableMicBtn);
+    buttonsContainer.appendChild(enableClipboardBtn);
     
     container.appendChild(statusContainer);
     container.appendChild(buttonsContainer);
@@ -131,6 +174,7 @@ function createMediaPermissionsComponent() {
     // State tracking
     let webcamEnabled = false;
     let micEnabled = false;
+    let clipboardEnabled = false;
     let webcamStream = null;
     let micStream = null;
     let onStatusChangeCallback = null;
@@ -169,6 +213,17 @@ function createMediaPermissionsComponent() {
             return true;
         }
         return false;
+    }
+    
+    function verifyClipboard() {
+        clipboardEnabled = true;
+        clipboardIndicator.textContent = 'Enabled';
+        clipboardIndicator.style.color = '#5cb85c';
+        enableClipboardBtn.textContent = 'Clipboard Enabled';
+        enableClipboardBtn.disabled = true;
+        enableClipboardBtn.style.background = '#5cb85c';
+        updateStatusCallback();
+        return true;
     }
     
     // Enable webcam handler
@@ -249,10 +304,46 @@ function createMediaPermissionsComponent() {
         }
     };
     
+    // Enable clipboard handler
+    enableClipboardBtn.onclick = async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        enableClipboardBtn.disabled = true;
+        enableClipboardBtn.textContent = 'Enabling...';
+        clipboardIndicator.textContent = 'Enabling...';
+        clipboardIndicator.style.color = '#ffa500';
+        
+        try {
+            // Check if clipboard API is available
+            if (!navigator.clipboard) {
+                throw new Error('Clipboard API not available. Please use a modern browser or ensure the page is served over HTTPS.');
+            }
+            
+            // Request clipboard write permission by attempting to write a test string
+            // This will trigger the browser's permission prompt if needed
+            await navigator.clipboard.writeText('test');
+            
+            // If successful, verify the permission
+            if (verifyClipboard()) {
+                console.log('Clipboard permission granted');
+            } else {
+                throw new Error('Failed to verify clipboard permission');
+            }
+        } catch (e) {
+            console.error("Failed to enable clipboard:", e.message);
+            enableClipboardBtn.disabled = false;
+            enableClipboardBtn.textContent = 'Enable Clipboard';
+            clipboardIndicator.textContent = 'Not Enabled';
+            clipboardIndicator.style.color = '#d9534f';
+            alert('Failed to enable clipboard. Please check your browser permissions. The page must be served over HTTPS for clipboard access.');
+        }
+    };
+    
     return {
         container,
         get webcamEnabled() { return webcamEnabled; },
         get micEnabled() { return micEnabled; },
+        get clipboardEnabled() { return clipboardEnabled; },
         set onStatusChange(callback) { onStatusChangeCallback = callback; }
     };
 }
@@ -324,7 +415,7 @@ function showLaunchPrompt () {
     
     // Update button state based on media permissions
     const updateLaunchButton = () => {
-        if (mediaPermissionsComponent.webcamEnabled && mediaPermissionsComponent.micEnabled) {
+        if (mediaPermissionsComponent.webcamEnabled && mediaPermissionsComponent.micEnabled && mediaPermissionsComponent.clipboardEnabled) {
             button.disabled = false;
             button.style.background = '#4CAF50';
             button.style.cursor = 'pointer';
